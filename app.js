@@ -1,627 +1,324 @@
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbxUX942IUATzLM8xjRuudQPouiZHNfPeM2PG-x0VnwR92J7CcXICUZ32rYMxlauQAM/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxUX942IUATzLM8xjRuudQPouiZHNfPeM2PG-x0VnwR92J7CcXICUZ32rYMxlauQAM/exec";
 
-
+let currentTicket = null;
 let scanner = null;
+let jsonpCounter = 0;
 
-let currentTicket = "";
+const resultBox = document.getElementById("result");
+const volunteerInput = document.getElementById("volunteer");
+const markButton = document.getElementById("markUsed");
 
-let scannerRunning = false;
+function showResult(html, type = "") {
+  resultBox.className = "result " + type;
+  resultBox.innerHTML = html;
+}
 
+function apiRequest(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "under25Callback_" + Date.now() + "_" + (++jsonpCounter);
 
-// =====================================================
-// START SCANNER
-// =====================================================
+    const script = document.createElement("script");
 
-async function startScanner() {
+    const query = new URLSearchParams({
+      action,
+      ...params,
+      callback: callbackName
+    });
 
-  const status =
-    document.getElementById(
-      "scannerStatus"
-    );
+    const url = API_URL + "?" + query.toString();
 
+    let finished = false;
+
+    const cleanup = () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      try {
+        delete window[callbackName];
+      } catch (_) {
+        window[callbackName] = undefined;
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      if (finished) return;
+
+      finished = true;
+      cleanup();
+
+      reject(
+        new Error(
+          "Ticket system did not respond. Check the Apps Script URL."
+        )
+      );
+    }, 15000);
+
+    window[callbackName] = (data) => {
+      if (finished) return;
+
+      finished = true;
+      clearTimeout(timeout);
+      cleanup();
+
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      if (finished) return;
+
+      finished = true;
+      clearTimeout(timeout);
+      cleanup();
+
+      reject(
+        new Error(
+          "Unable to reach the Apps Script ticket system."
+        )
+      );
+    };
+
+    script.src = url;
+
+    document.body.appendChild(script);
+  });
+}
+
+async function checkTicket(ticketId) {
   try {
+    showResult("⏳ Checking ticket...", "loading");
 
-    status.textContent =
-      "📷 Requesting camera permission...";
+    const data = await apiRequest("checkTicket", {
+      ticket: ticketId
+    });
 
+    console.log("CHECK RESPONSE:", data);
 
-    scanner =
-      new Html5Qrcode(
-        "reader"
+    if (data.status === "VALID") {
+      currentTicket = ticketId;
+
+      showResult(
+        `
+        <div class="valid-title">✅ VALID TICKET</div>
+        <div class="ticket-id">${ticketId}</div>
+        <div class="ticket-message">
+          This ticket is valid and can be used.
+        </div>
+        `,
+        "valid"
       );
 
+      volunteerInput.style.display = "block";
+      markButton.style.display = "block";
+
+      return;
+    }
+
+    if (data.status === "USED") {
+      currentTicket = null;
+
+      showResult(
+        `
+        <div class="used-title">⚠️ ALREADY USED</div>
+        <div class="ticket-id">${ticketId}</div>
+        <div class="ticket-message">
+          This ticket has already been used.
+        </div>
+        `,
+        "used"
+      );
+
+      volunteerInput.style.display = "none";
+      markButton.style.display = "none";
+
+      return;
+    }
+
+    showResult(
+      `
+      <div class="invalid-title">❌ INVALID TICKET</div>
+      <div class="ticket-id">${ticketId}</div>
+      <div class="ticket-message">
+        ${data.message || "Ticket not found."}
+      </div>
+      `,
+      "invalid"
+    );
+
+    volunteerInput.style.display = "none";
+    markButton.style.display = "none";
+
+  } catch (error) {
+    console.error("CHECK ERROR:", error);
+
+    showResult(
+      `
+      <div class="error-title">❌ ERROR</div>
+      <div class="ticket-message">
+        ${error.message}
+      </div>
+      `,
+      "error"
+    );
+  }
+}
+
+async function markTicketUsed() {
+  if (!currentTicket) {
+    alert("Please scan a valid ticket first.");
+    return;
+  }
+
+  const volunteer =
+    volunteerInput.value.trim() || "Volunteer";
+
+  try {
+    markButton.disabled = true;
+    markButton.innerText = "Confirming...";
+
+    const data = await apiRequest("markUsed", {
+      ticket: currentTicket,
+      volunteer: volunteer
+    });
+
+    console.log("MARK RESPONSE:", data);
+
+    if (data.status === "SUCCESS") {
+      showResult(
+        `
+        <div class="valid-title">✅ ENTRY CONFIRMED</div>
+        <div class="ticket-id">${currentTicket}</div>
+        <div class="ticket-message">
+          Ticket has been successfully marked as USED.
+        </div>
+        `,
+        "valid"
+      );
+
+      currentTicket = null;
+      volunteerInput.value = "";
+      volunteerInput.style.display = "none";
+      markButton.style.display = "none";
+
+      return;
+    }
+
+    if (data.status === "USED") {
+      showResult(
+        `
+        <div class="used-title">⚠️ ALREADY USED</div>
+        <div class="ticket-id">${currentTicket}</div>
+        `,
+        "used"
+      );
+
+      return;
+    }
+
+    showResult(
+      `
+      <div class="invalid-title">❌ ERROR</div>
+      <div class="ticket-message">
+        ${data.message || "Unable to mark ticket as used."}
+      </div>
+      `,
+      "error"
+    );
+
+  } catch (error) {
+    console.error("MARK ERROR:", error);
+
+    showResult(
+      `
+      <div class="error-title">❌ ERROR</div>
+      <div class="ticket-message">
+        ${error.message}
+      </div>
+      `,
+      "error"
+    );
+
+  } finally {
+    markButton.disabled = false;
+    markButton.innerText = "MARK ENTRY";
+  }
+}
+
+function onScanSuccess(decodedText) {
+  console.log("QR SCANNED:", decodedText);
+
+  let ticketId = decodedText.trim();
+
+  // If QR contains a URL, extract ticket parameter.
+  try {
+    if (
+      ticketId.startsWith("http://") ||
+      ticketId.startsWith("https://")
+    ) {
+      const url = new URL(ticketId);
+
+      ticketId =
+        url.searchParams.get("ticket") ||
+        url.searchParams.get("id") ||
+        ticketId;
+    }
+  } catch (_) {}
+
+  checkTicket(ticketId);
+}
+
+function onScanFailure(error) {
+  // Ignore continuous scanner errors.
+}
+
+async function startScanner() {
+  try {
+    showResult("📷 Starting camera...", "loading");
+
+    scanner = new Html5Qrcode("reader");
 
     await scanner.start(
-
-      {
-        facingMode: "environment"
-      },
-
+      { facingMode: "environment" },
       {
         fps: 10,
-
         qrbox: {
           width: 250,
           height: 250
         }
       },
-
       onScanSuccess,
-
-      onScanError
-
+      onScanFailure
     );
-
-
-    scannerRunning = true;
-
-
-    status.textContent =
-      "📷 Point the camera at the ticket QR code";
-
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    status.textContent =
-      "❌ Camera could not be started.";
-
-
-    showError(
-      "Camera permission was denied or the browser cannot access the camera."
-    );
-
-  }
-
-}
-
-
-// =====================================================
-// QR SCANNED
-// =====================================================
-
-async function onScanSuccess(decodedText) {
-
-  if (!decodedText) {
-    return;
-  }
-
-
-  if (!scannerRunning) {
-    return;
-  }
-
-
-  currentTicket =
-    decodedText.trim();
-
-
-  await stopScanner();
-
-
-  document.getElementById(
-    "scannerStatus"
-  ).textContent =
-    "🔍 Checking ticket...";
-
-
-  await checkTicket(
-    currentTicket
-  );
-
-}
-
-
-// =====================================================
-// IGNORE SCAN ERRORS
-// =====================================================
-
-function onScanError(error) {
-
-  // QR not detected yet.
-  // Ignore continuous scanner errors.
-
-}
-
-
-// =====================================================
-// STOP CAMERA
-// =====================================================
-
-async function stopScanner() {
-
-  if (
-    scanner &&
-    scannerRunning
-  ) {
-
-    try {
-
-      await scanner.stop();
-
-      scanner.clear();
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-    scannerRunning = false;
-
-  }
-
-}
-
-
-// =====================================================
-// CHECK TICKET
-// =====================================================
-
-async function checkTicket(ticketId) {
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL +
-        "?action=checkTicket&ticket=" +
-        encodeURIComponent(
-          ticketId
-        )
-      );
-
-
-    const result =
-      await response.json();
-
 
     showResult(
-      result
+      "📷 Scanner ready — scan the ticket QR code.",
+      "info"
     );
-
 
   } catch (error) {
+    console.error("CAMERA ERROR:", error);
 
-    console.error(error);
-
-
-    showError(
-      "Unable to connect to the ticket system."
+    showResult(
+      `
+      <div class="error-title">❌ CAMERA ERROR</div>
+      <div class="ticket-message">
+        ${error.message}
+      </div>
+      `,
+      "error"
     );
-
   }
-
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  markButton.style.display = "none";
+  volunteerInput.style.display = "none";
 
-// =====================================================
-// SHOW RESULT
-// =====================================================
-
-function showResult(result) {
-
-  const box =
-    document.getElementById(
-      "result"
-    );
-
-  const confirm =
-    document.getElementById(
-      "confirmButton"
-    );
-
-  const scanAgain =
-    document.getElementById(
-      "scanAgain"
-    );
-
-
-  box.className =
-    "result";
-
-
-  box.classList.remove(
-    "hidden"
-  );
-
-
-  confirm.classList.add(
-    "hidden"
-  );
-
-
-  scanAgain.classList.add(
-    "hidden"
-  );
-
-
-  if (
-    result.status ===
-    "VALID"
-  ) {
-
-    box.classList.add(
-      "valid"
-    );
-
-
-    box.innerHTML =
-      `
-      <strong>✅ VALID TICKET</strong>
-      <br><br>
-
-      <strong>Student:</strong>
-      ${escapeHtml(result.studentName)}
-
-      <br>
-
-      <strong>USN:</strong>
-      ${escapeHtml(result.usn)}
-
-      <br>
-
-      <strong>Ticket:</strong>
-      ${escapeHtml(result.ticketId)}
-      `;
-
-
-    confirm.classList.remove(
-      "hidden"
-    );
-
-
-    document.getElementById(
-      "scannerStatus"
-    ).textContent =
-      "✅ Ticket verified";
-
-  }
-
-
-  else if (
-    result.status ===
-    "USED"
-  ) {
-
-    box.classList.add(
-      "used"
-    );
-
-
-    box.innerHTML =
-      `
-      <strong>⚠️ TICKET ALREADY USED</strong>
-      <br><br>
-
-      Student:
-      ${escapeHtml(result.studentName)}
-
-      <br>
-
-      Ticket:
-      ${escapeHtml(result.ticketId)}
-
-      <br>
-
-      Entry:
-      ${escapeHtml(result.entryTime)}
-      `;
-
-
-    scanAgain.classList.remove(
-      "hidden"
-    );
-
-
-    document.getElementById(
-      "scannerStatus"
-    ).textContent =
-      "⚠️ Ticket already used";
-
-  }
-
-
-  else {
-
-    box.classList.add(
-      "invalid"
-    );
-
-
-    box.innerHTML =
-      `
-      <strong>❌ INVALID TICKET</strong>
-      <br><br>
-
-      ${escapeHtml(
-        result.message ||
-        "This ticket is not valid."
-      )}
-      `;
-
-
-    scanAgain.classList.remove(
-      "hidden"
-    );
-
-
-    document.getElementById(
-      "scannerStatus"
-    ).textContent =
-      "❌ Invalid ticket";
-
-  }
-
-}
-
-
-// =====================================================
-// CONFIRM ENTRY
-// =====================================================
-
-document
-  .getElementById(
-    "confirmButton"
-  )
-  .addEventListener(
+  markButton.addEventListener(
     "click",
-    confirmEntry
+    markTicketUsed
   );
 
-
-async function confirmEntry() {
-
-  const volunteer =
-    prompt(
-      "Enter volunteer name:"
-    );
-
-
-  if (!volunteer) {
-
-    return;
-
-  }
-
-
-  const button =
-    document.getElementById(
-      "confirmButton"
-    );
-
-
-  button.disabled =
-    true;
-
-
-  button.textContent =
-    "PROCESSING...";
-
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL +
-        "?action=markUsed" +
-        "&ticket=" +
-        encodeURIComponent(
-          currentTicket
-        ) +
-        "&volunteer=" +
-        encodeURIComponent(
-          volunteer
-        )
-      );
-
-
-    const result =
-      await response.json();
-
-
-    if (
-      result.success
-    ) {
-
-      const box =
-        document.getElementById(
-          "result"
-        );
-
-
-      box.className =
-        "result valid";
-
-
-      box.classList.remove(
-        "hidden"
-      );
-
-
-      box.innerHTML =
-        `
-        <strong>
-          🎉 ENTRY CONFIRMED
-        </strong>
-
-        <br><br>
-
-        Student:
-        ${escapeHtml(
-          result.studentName
-        )}
-
-        <br>
-
-        Ticket:
-        ${escapeHtml(
-          result.ticketId
-        )}
-
-        <br><br>
-
-        🍿 Enjoy the Watch Party!
-        `;
-
-
-      button.classList.add(
-        "hidden"
-      );
-
-
-      document.getElementById(
-        "scanAgain"
-      ).classList.remove(
-        "hidden"
-      );
-
-
-      document.getElementById(
-        "scannerStatus"
-      ).textContent =
-        "🎉 Entry successfully recorded";
-
-    }
-
-    else {
-
-      alert(
-        result.message
-      );
-
-      button.disabled =
-        false;
-
-      button.textContent =
-        "✓ CONFIRM ENTRY";
-
-    }
-
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    alert(
-      "Unable to update entry status."
-    );
-
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      "✓ CONFIRM ENTRY";
-
-  }
-
-}
-
-
-// =====================================================
-// SCAN NEXT
-// =====================================================
-
-document
-  .getElementById(
-    "scanAgain"
-  )
-  .addEventListener(
-    "click",
-    function() {
-
-      document
-        .getElementById(
-          "result"
-        )
-        .className =
-        "result hidden";
-
-
-      document
-        .getElementById(
-          "confirmButton"
-        )
-        .className =
-        "confirm hidden";
-
-
-      currentTicket =
-        "";
-
-
-      startScanner();
-
-    }
-  );
-
-
-// =====================================================
-// ERROR
-// =====================================================
-
-function showError(message) {
-
-  const box =
-    document.getElementById(
-      "result"
-    );
-
-
-  box.className =
-    "result invalid";
-
-
-  box.classList.remove(
-    "hidden"
-  );
-
-
-  box.innerHTML =
-    `
-    <strong>❌ ERROR</strong>
-    <br><br>
-    ${escapeHtml(message)}
-    `;
-
-}
-
-
-// =====================================================
-// SECURITY
-// =====================================================
-
-function escapeHtml(value) {
-
-  const div =
-    document.createElement(
-      "div"
-    );
-
-
-  div.textContent =
-    value || "";
-
-
-  return div.innerHTML;
-
-}
-
-
-// =====================================================
-// START
-// =====================================================
-
-window.addEventListener(
-  "load",
-  function() {
-
-    startScanner();
-
-  }
-);
+  startScanner();
+});
