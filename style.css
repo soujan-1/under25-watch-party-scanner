@@ -5,138 +5,251 @@
 body {
   margin: 0;
   min-height: 100vh;
-
+  font-family: Arial, Helvetica, sans-serif;
   background: #080808;
-
   color: #ffffff;
-
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
 }
 
 .container {
-  width: 100%;
-  max-width: 520px;
-
+  width: min(520px, 94%);
   margin: auto;
+  padding: 24px 0 40px;
+}
 
-  padding: 30px 18px;
-
+.header {
   text-align: center;
+  margin-bottom: 22px;
 }
 
 .brand {
-  font-size: 36px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 4px;
+}
 
-  font-weight: 900;
-
+.header h1 {
+  margin: 8px 0 3px;
+  font-size: 30px;
   letter-spacing: 2px;
 }
 
-h1 {
-  margin: 8px 0 0;
-
-  font-size: 24px;
-}
-
-.subtitle {
-  color: #999;
-
-  margin-bottom: 25px;
+.header p {
+  margin: 0;
+  opacity: 0.65;
+  font-size: 12px;
+  letter-spacing: 3px;
 }
 
 .scanner-card {
-  background: #111;
-
-  padding: 15px;
-
-  border-radius: 20px;
-}
-
-#reader {
-  width: 100%;
-
-  overflow: hidden;
-
-  border-radius: 15px;
-}
-
-#reader video {
-  width: 100% !important;
-
-  border-radius: 15px;
-}
-
-#scannerStatus {
-  color: #aaa;
-
-  font-size: 14px;
-
-  margin: 15px 0 5px;
-}
-
-.result {
-  margin-top: 20px;
-
-  padding: 22px;
-
+  padding: 14px;
   border-radius: 18px;
-
-  font-size: 18px;
-
-  line-height: 1.6;
+  background: #151515;
+  border: 1px solid #2b2b2b;
 }
 
-.valid {
-  background: #064e3b;
-
-  border: 2px solid #22c55e;
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #000;
 }
 
-.used {
-  background: #451a03;
-
-  border: 2px solid #f59e0b;
+#camera {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.invalid {
-  background: #450a0a;
+.scan-frame {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  left: 17.5%;
+  top: 17.5%;
+  border: 2px solid rgba(255,255,255,0.9);
+  border-radius: 18px;
+  pointer-events: none;
+}
 
-  border: 2px solid #ef4444;
+.scan-frame::before,
+.scan-frame::after,
+.scan-frame span::before,
+.scan-frame span::after {
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+}
+
+.scan-frame::before {
+  left: -2px;
+  top: -2px;
+  border-left: 4px solid #fff;
+  border-top: 4px solid #fff;
+}
+
+.scan-frame::after {
+  right: -2px;
+  top: -2px;
+  border-right: 4px solid #fff;
+  border-top: 4px solid #fff;
+}
+
+.scan-frame span::before {
+  left: -2px;
+  bottom: -2px;
+  border-left: 4px solid #fff;
+  border-bottom: 4px solid #fff;
+}
+
+.scan-frame span::after {
+  right: -2px;
+  bottom: -2px;
+  border-right: 4px solid #fff;
+  border-bottom: 4px solid #fff;
+}
+
+.camera-message {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  background: rgba(0,0,0,0.65);
 }
 
 button {
   width: 100%;
-
-  padding: 17px;
-
-  margin-top: 15px;
-
-  border: none;
-
-  border-radius: 14px;
-
-  font-size: 17px;
-
+  border: 0;
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 12px;
+  font-size: 15px;
   font-weight: 800;
-
   cursor: pointer;
 }
 
-.confirm {
-  background: #22c55e;
-
-  color: white;
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.scan-again {
-  background: white;
-
-  color: black;
+.primary-button {
+  background: #ffffff;
+  color: #000000;
 }
 
-.hidden {
-  display: none !important;
+.secondary-button {
+  background: #222222;
+  color: #ffffff;
+  border: 1px solid #444;
+}
+
+.result {
+  margin-top: 16px;
+  padding: 22px;
+  text-align: center;
+  border-radius: 16px;
+  background: #151515;
+  border: 1px solid #2b2b2b;
+}
+
+.result-icon {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+
+.result h2 {
+  margin: 4px 0 8px;
+  font-size: 23px;
+}
+
+.result p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.result.valid {
+  border-color: #3cff8f;
+}
+
+.result.used {
+  border-color: #ffc107;
+}
+
+.result.invalid,
+.result.error {
+  border-color: #ff4d4d;
+}
+
+.result.loading {
+  border-color: #777;
+}
+
+.volunteer-section {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #151515;
+  border: 1px solid #2b2b2b;
+}
+
+.volunteer-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: #0c0c0c;
+  color: #fff;
+  outline: none;
+  font-size: 15px;
+}
+
+input:focus {
+  border-color: #fff;
+}
+
+.manual-section {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.manual-section p {
+  font-size: 12px;
+  opacity: 0.55;
+}
+
+.manual-row {
+  display: flex;
+  gap: 8px;
+}
+
+.manual-row input {
+  flex: 1;
+}
+
+.manual-row button {
+  width: 110px;
+  margin-top: 0;
+}
+
+footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.4;
 }
