@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>UNDER25 | Watch Party Scanner</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script
+    src="https://unpkg.com/html5-qrcode"
+    type="text/javascript">
+  </script>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <div class="brand">
+      UNDER25
+    </div>
+
+    <h1>WATCH PARTY 🎬</h1>
+
+    <p class="subtitle">
+      Official Ticket Scanner
+    </p>
+
+    <div class="scanner-card">
+
+      <div id="reader"></div>
+
+      <p id="scannerStatus">
+        📷 Starting camera...
+      </p>
+
+    </div>
+
+    <div
+      id="result"
+      class="result hidden">
+    </div>
+
+    <button
+      id="confirmButton"
+      class="confirm hidden">
+      ✓ CONFIRM ENTRY
+    </button>
+
+    <button
+      id="scanAgain"
+      class="scan-again hidden">
+      SCAN NEXT TICKET
+    </button>
+
+  </main>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
