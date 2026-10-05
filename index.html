@@ -1,64 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
-  />
+  >
 
-  <title>UNDER25 | Watch Party Scanner</title>
+  <title>UNDER25 Watch Party — Entry Scanner</title>
 
-  <link rel="stylesheet" href="style.css" />
-
-  <script
-    src="https://unpkg.com/html5-qrcode"
-    type="text/javascript">
-  </script>
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
 
 <body>
 
   <main class="container">
 
-    <div class="brand">
-      UNDER25
+    <div class="header">
+      <div class="brand">UNDER25</div>
+
+      <h1>WATCH PARTY</h1>
+
+      <p>ENTRY SCANNER</p>
     </div>
 
-    <h1>WATCH PARTY 🎬</h1>
 
-    <p class="subtitle">
-      Official Ticket Scanner
-    </p>
+    <!-- CAMERA -->
+    <section class="scanner-card">
 
-    <div class="scanner-card">
+      <div class="camera-wrapper">
 
-      <div id="reader"></div>
+        <video
+          id="camera"
+          autoplay
+          playsinline
+          muted
+        ></video>
 
-      <p id="scannerStatus">
-        📷 Starting camera...
-      </p>
+        <div class="scan-frame">
+          <span></span>
+        </div>
 
-    </div>
+        <div
+          id="cameraMessage"
+          class="camera-message"
+        >
+          Camera is not started
+        </div>
 
-    <div
+      </div>
+
+
+      <button
+        id="startCamera"
+        class="primary-button"
+      >
+        📷 START CAMERA
+      </button>
+
+
+      <button
+        id="stopCamera"
+        class="secondary-button"
+        style="display:none;"
+      >
+        STOP CAMERA
+      </button>
+
+    </section>
+
+
+    <!-- RESULT -->
+    <section
       id="result"
-      class="result hidden">
-    </div>
+      class="result"
+    >
+      <div class="result-icon">🎟️</div>
 
-    <button
-      id="confirmButton"
-      class="confirm hidden">
-      ✓ CONFIRM ENTRY
-    </button>
+      <h2>Ready to Scan</h2>
 
-    <button
-      id="scanAgain"
-      class="scan-again hidden">
-      SCAN NEXT TICKET
-    </button>
+      <p>
+        Start the camera and scan the ticket QR code.
+      </p>
+    </section>
+
+
+    <!-- VOLUNTEER -->
+    <section
+      id="volunteerSection"
+      class="volunteer-section"
+      style="display:none;"
+    >
+
+      <label for="volunteer">
+        Volunteer / Checker Name
+      </label>
+
+      <input
+        id="volunteer"
+        type="text"
+        placeholder="Enter your name"
+        autocomplete="name"
+      >
+
+      <button
+        id="markUsed"
+        class="primary-button"
+      >
+        ✅ MARK ENTRY
+      </button>
+
+    </section>
+
+
+    <!-- MANUAL TICKET -->
+    <section class="manual-section">
+
+      <p>Having trouble scanning?</p>
+
+      <div class="manual-row">
+
+        <input
+          id="manualTicket"
+          type="text"
+          placeholder="Enter Ticket ID"
+          autocomplete="off"
+        >
+
+        <button
+          id="manualCheck"
+          class="secondary-button"
+        >
+          CHECK
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <footer>
+      UNDER25 × DR. ACS COLLEGE OF ENGINEERING
+    </footer>
 
   </main>
+
 
   <script src="app.js"></script>
 
